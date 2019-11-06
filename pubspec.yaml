@@ -1,8 +1,8 @@
 name: type_translator
 description: A library for parsing any type value.
-version: 1.0.0
+version: 1.0.1
 homepage: https://github.com/Arxing/dart-type_translator
-author: arxing <meiswind711108@gmail.com>
+author: Arxing <meiswind711108@gmail.com>
 pubpage: https://pub.dev/packages/type_translator
 
 environment:

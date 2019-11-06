@@ -4,7 +4,8 @@ String _translationError(Type input, Type expect) => "Occur primitive translatio
 
 TypeTranslator<int, int> _intToIntTranslator = TypeTranslator((input) => input);
 
-TypeTranslator<String, int> _stringToIntTranslator = TypeTranslator((input) => int.tryParse(input) ?? (throw _translationError(String, int)));
+TypeTranslator<String, int> _stringToIntTranslator =
+    TypeTranslator((input) => int.tryParse(input) ?? (throw _translationError(String, int)));
 
 TypeTranslator<bool, int> _boolToIntTranslator = TypeTranslator((input) => input ? 1 : 0);
 
@@ -90,6 +91,14 @@ dynamic translate(dynamic input, Type outputType) {
 }
 
 R translateT<R>(dynamic input) => translate(input, R);
+
+int translateInt(dynamic input) => translateT<int>(input);
+
+double translateDouble(dynamic input) => translateT<double>(input);
+
+bool translateBool(dynamic input) => translateT<bool>(input);
+
+String translateString(dynamic input) => translateT<String>(input);
 
 // ======================================================================== define translator class
 
