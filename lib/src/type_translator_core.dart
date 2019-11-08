@@ -1,4 +1,9 @@
-String _translationError(Type input, Type expect) => "Occur primitive translation error on $input to $expect";
+import 'package:type_token/type_token.dart';
+
+String _translationErrorToken(TypeToken input, TypeToken expect) => "Occur primitive translation error on ${input.fullTypeName}"
+    " to ${expect.fullTypeName}";
+
+String _translationError(Type input, Type expect) => _translationErrorToken(TypeToken.of(input), TypeToken.of(expect));
 
 // ======================================================================== primitive -> int
 
@@ -42,23 +47,23 @@ TypeTranslator<String, String> _stringToStringTranslator = TypeTranslator((input
 
 // ======================================================================== default translator factory
 
-Map<Type, _TypeTranslatorGroup> _translatorFactory = {
-  int: _TypeTranslatorGroup<int>([
+Map<TypeToken, _TypeTranslatorGroup> _translatorFactory = {
+  TypeToken.ofInt(): _TypeTranslatorGroup<int>([
     _intToIntTranslator,
     _stringToIntTranslator,
     _boolToIntTranslator,
   ]),
-  double: _TypeTranslatorGroup<double>([
+  TypeToken.ofDouble(): _TypeTranslatorGroup<double>([
     _doubleToDoubleTranslator,
     _intToDoubleTranslator,
     _stringToDoubleTranslator,
   ]),
-  bool: _TypeTranslatorGroup<bool>([
+  TypeToken.ofBool(): _TypeTranslatorGroup<bool>([
     _boolToBoolTranslator,
     _intToBoolTranslator,
     _stringToBoolTranslator,
   ]),
-  String: _TypeTranslatorGroup<String>([
+  TypeToken.ofString(): _TypeTranslatorGroup<String>([
     _boolToStringTranslator,
     _doubleToStringTranslator,
     _intToStringTranslator,
@@ -67,12 +72,15 @@ Map<Type, _TypeTranslatorGroup> _translatorFactory = {
 };
 
 void registerPrimitiveTranslatorT<T, R>(TypeTranslator<T, R> translator) {
-  if (!_translatorFactory.containsKey(R)) _translatorFactory[R] = _TypeTranslatorGroup<R>();
-  _TypeTranslatorGroup group = _translatorFactory[R];
-  group.addT<T>(translator);
+  TypeToken output = translator.outputType;
+  if (!_translatorFactory.containsKey(output)) _translatorFactory[output] = _TypeTranslatorGroup<R>();
+  _TypeTranslatorGroup group = _translatorFactory[output];
+  group.add(translator);
 }
 
-void unregisterPrimitiveTranslatorByType(Type input, Type output) {
+void unregisterPrimitiveTranslatorByType(Type inputType, Type outputType) {
+  TypeToken input = TypeToken.of(inputType);
+  TypeToken output = TypeToken.of(outputType);
   if (_translatorFactory.containsKey(output)) {
     _TypeTranslatorGroup group = _translatorFactory[output];
     group.removeOnInput(input);
@@ -83,8 +91,9 @@ void unregisterPrimitiveTranslator<T, R>() => unregisterPrimitiveTranslatorByTyp
 
 dynamic translate(dynamic input, Type outputType) {
   if (input == null) return null;
-  if (_translatorFactory.containsKey(outputType)) {
-    _TypeTranslatorGroup group = _translatorFactory[outputType];
+  TypeToken output = TypeToken.of(outputType);
+  if (_translatorFactory.containsKey(output)) {
+    _TypeTranslatorGroup group = _translatorFactory[output];
     return group.translate(input);
   }
   throw _translationError(input.runtimeType, outputType);
@@ -104,12 +113,18 @@ String translateString(dynamic input) => translateT<String>(input);
 
 class TypeTranslator<T, R> {
   final R Function(T) _translationFunc;
+  final TypeToken _inputType;
+  final TypeToken _outputType;
 
-  TypeTranslator(this._translationFunc);
+  TypeTranslator(this._translationFunc)
+      : _inputType = TypeToken.of(T),
+        _outputType = TypeToken.of(R);
 
-  Type get inputType => T;
+  TypeTranslator.fromToken(this._inputType, this._outputType, this._translationFunc);
 
-  Type get outputType => R;
+  TypeToken get inputType => _inputType;
+
+  TypeToken get outputType => _outputType;
 
   R translate(T input) => _translationFunc(input);
 }
@@ -117,39 +132,42 @@ class TypeTranslator<T, R> {
 // ======================================================================== define translator group class
 
 class _TypeTranslatorGroup<R> {
-  final Type outputType;
-  Map<Type, TypeTranslator> _translators = {};
+  final TypeToken outputType;
+  Map<TypeToken, TypeTranslator> _translators = {};
 
-  _TypeTranslatorGroup([List<TypeTranslator> initTranslators]) : outputType = R {
-    addAll(initTranslators);
+  _TypeTranslatorGroup([List<TypeTranslator> initTranslators]) : outputType = TypeToken.of(R) {
+    if (initTranslators != null) addAll(initTranslators);
   }
 
   void addT<T>(TypeTranslator<T, R> translator) {
-    _translators[T] = translator;
+    _translators[TypeToken.of(T)] = translator;
   }
 
   void add(TypeTranslator translator) {
-    Type inputType = translator.inputType;
-    Type outputType = translator.outputType;
-    if (outputType != R) throw "_TranslatorGroup<$R>.add<$outputType>() type must be same";
+    TypeToken inputType = translator.inputType;
+    TypeToken outputType = translator.outputType;
+    if (outputType != TypeToken.of(R)) throw "_TranslatorGroup<$R>.add<$outputType>() type must be same";
     _translators[inputType] = translator;
   }
 
   void addAll(List<TypeTranslator> translators) => translators.forEach((o) => add(o));
 
-  void removeOnInput(Type type) {
+  void removeOnInput(TypeToken type) {
     if (_translators.containsKey(type)) {
       _translators.remove(type);
       print("unregister primitive translator $type -> $R");
     }
   }
 
+  void removeOnInputType(Type type) => this.removeOnInput(TypeToken.of(type));
+
   R translate(dynamic input) {
-    Type inputType = input.runtimeType;
+    if (input == null) return null;
+    TypeToken inputType = TypeToken.of(input.runtimeType);
     if (_translators.containsKey(inputType)) {
       TypeTranslator translator = _translators[inputType];
       return translator.translate(input);
     }
-    throw _translationError(inputType, outputType);
+    throw _translationErrorToken(inputType, outputType);
   }
 }

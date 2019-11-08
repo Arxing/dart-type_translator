@@ -1,4 +1,5 @@
 import 'package:type_translator/type_translator.dart';
+import 'package:type_token/type_token.dart';
 
 main() {
   dynamic input;
@@ -29,8 +30,26 @@ main() {
   registerPrimitiveTranslatorT(customTranslator);
   input = A();
   print(translateT<int>(input)); // print: 90
+
+  registerPrimitiveTranslatorT(customTranslator2);
+  input = 1.55;
+  print(translateT<int>(input));
+
+  registerPrimitiveTranslatorT(customTranslator3);
+  input = B(999);
+  print(translateT<int>(input));
 }
 
 class A {}
 
+class B {
+  int data;
+
+  B(this.data);
+}
+
 TypeTranslator<A, int> get customTranslator => TypeTranslator((input) => 90);
+
+TypeTranslator get customTranslator2 => TypeTranslator.fromToken(TypeToken.ofDouble(), TypeToken.ofInt(), (input) => 10);
+
+TypeTranslator get customTranslator3 => TypeTranslator.fromToken(TypeToken.of(B), TypeToken.ofInt(), (input) => input.data);

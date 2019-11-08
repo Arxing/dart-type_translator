@@ -5,3 +5,7 @@
 ## 1.0.1
 
 - new `translateInt`, `translateDouble`, `translateBool`, `translateString` 
+
+## 1.0.2
+
+- support `TypeToken` transform
