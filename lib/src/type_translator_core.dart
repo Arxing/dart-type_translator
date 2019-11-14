@@ -89,15 +89,16 @@ void unregisterPrimitiveTranslatorByType(Type inputType, Type outputType) {
 
 void unregisterPrimitiveTranslator<T, R>() => unregisterPrimitiveTranslatorByType(T, R);
 
-dynamic translate(dynamic input, Type outputType) {
+dynamic translateToken(dynamic input, TypeToken outputType) {
   if (input == null) return null;
-  TypeToken output = TypeToken.of(outputType);
-  if (_translatorFactory.containsKey(output)) {
-    _TypeTranslatorGroup group = _translatorFactory[output];
+  if (_translatorFactory.containsKey(outputType)) {
+    _TypeTranslatorGroup group = _translatorFactory[outputType];
     return group.translate(input);
   }
-  throw _translationError(input.runtimeType, outputType);
+  throw _translationErrorToken(TypeToken.of(input.runtimeType), outputType);
 }
+
+dynamic translate(dynamic input, Type outputType) => translateToken(input, TypeToken.of(outputType));
 
 R translateT<R>(dynamic input) => translate(input, R);
 
